@@ -32,7 +32,7 @@ const EmptyChatMessageInput = ({
   setFileIds,
   files,
   setFiles,
-  placeholder = "Ask anything...",
+  placeholder = "Ask me anything you want...",
   className,
 }: EmptyChatMessageInputProps) => {
   const [copilotEnabled, setCopilotEnabled] = useState(false);

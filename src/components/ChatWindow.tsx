@@ -13,7 +13,7 @@ import crypto from 'crypto';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 import { getSuggestions } from '@/lib/actions';
-import { Settings, AlertCircle } from 'lucide-react';
+import { Settings, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import NextError from 'next/error';
 
@@ -539,33 +539,67 @@ const ChatWindow = ({ id }: { id?: string }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConfigReady, isReady, initialMessage]);
 
+  // Add new state for scroll behavior
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  // Add smooth scroll to bottom function
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (chatContainerRef.current && autoScroll) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: behavior,
+      });
+    }
+  };
+
+  // Add scroll listener for user override
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    const handleScroll = () => {
+      if (container) {
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        setAutoScroll(scrollHeight - scrollTop - clientHeight < 100);
+      }
+    };
+
+    container?.addEventListener('scroll', handleScroll);
+    return () => container?.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Automatically scroll when new messages appear
+  useEffect(() => {
+    scrollToBottom('auto');
+  }, [messages]);
+
+  // Enhanced loading spinner
+  const LoadingSpinner = () => (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+      <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      <p className="text-muted-foreground text-sm">Initializing chat...</p>
+    </div>
+  );
+
+  // Enhanced error display
   if (hasError) {
     return (
-      <div className="relative h-screen">
-        <div className="absolute right-4 top-4">
+      <div className="relative">
+        <div className="absolute w-full flex flex-row items-center justify-end mr-5 mt-5">
           <Link href="/settings">
-            <Button variant="ghost" size="icon">
-              <Settings className="h-5 w-5 text-muted-foreground" />
-            </Button>
+            <Settings className="cursor-pointer lg:hidden text-foreground hover:text-primary transition-colors" />
           </Link>
         </div>
-        <div className="flex h-full flex-col items-center justify-center gap-4 px-4">
-          <AlertCircle className="h-12 w-12 text-destructive" />
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-foreground">
+        <div className="flex flex-col items-center justify-center min-h-screen gap-4 px-4">
+          <AlertCircle className="w-16 h-16 text-destructive" />
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-semibold text-foreground">
               Connection Error
             </h2>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Failed to connect to the server. Please check your network or try again later.
+            <p className="text-muted-foreground">
+              Unable to connect to the server. Please check your network connection
+              and try again later.
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => window.location.reload()}
-            className="mt-4"
-          >
-            Retry Connection
-          </Button>
         </div>
       </div>
     );
@@ -575,39 +609,42 @@ const ChatWindow = ({ id }: { id?: string }) => {
     notFound ? (
       <NextError statusCode={404} />
     ) : (
-      <div className="flex h-screen flex-col">
-        <Navbar chatId={chatId!} messages={messages} />
-        {messages.length > 0 ? (
-          <Chat
-            loading={loading}
-            messages={messages}
-            sendMessage={sendMessage}
-            messageAppeared={messageAppeared}
-            rewrite={rewrite}
-            fileIds={fileIds}
-            setFileIds={setFileIds}
-            files={files}
-            setFiles={setFiles}
-          />
-        ) : (
-          <EmptyChat
-            sendMessage={sendMessage}
-            focusMode={focusMode}
-            setFocusMode={setFocusMode}
-            optimizationMode={optimizationMode}
-            setOptimizationMode={setOptimizationMode}
-            fileIds={fileIds}
-            setFileIds={setFileIds}
-            files={files}
-            setFiles={setFiles}
-          />
-        )}
+      <div className="h-screen flex flex-col">
+        {messages.length > 0 && <Navbar chatId={chatId!} messages={messages} />}
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent"
+        >
+          {messages.length > 0 ? (
+            <Chat
+              loading={loading}
+              messages={messages}
+              sendMessage={sendMessage}
+              messageAppeared={messageAppeared}
+              rewrite={rewrite}
+              fileIds={fileIds}
+              setFileIds={setFileIds}
+              files={files}
+              setFiles={setFiles}
+            />
+          ) : (
+            <EmptyChat
+              sendMessage={sendMessage}
+              focusMode={focusMode}
+              setFocusMode={setFocusMode}
+              optimizationMode={optimizationMode}
+              setOptimizationMode={setOptimizationMode}
+              fileIds={fileIds}
+              setFileIds={setFileIds}
+              files={files}
+              setFiles={setFiles}
+            />
+          )}
+        </div>
       </div>
     )
   ) : (
-    <div className="flex h-screen items-center justify-center">
-      <Spinner className="h-12 w-12 text-primary" />
-    </div>
+    <LoadingSpinner />
   );
 };
 

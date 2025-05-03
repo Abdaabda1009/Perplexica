@@ -1,4 +1,4 @@
-'use client';
+'use  client';
 
 import { Fragment, useEffect, useRef, useState } from 'react';
 import MessageInput from './MessageInput';
@@ -39,13 +39,12 @@ const Chat = ({
     };
 
     updateDividerWidth();
-
     window.addEventListener('resize', updateDividerWidth);
 
     return () => {
       window.removeEventListener('resize', updateDividerWidth);
     };
-  });
+  }, []);
 
   useEffect(() => {
     const scroll = () => {
@@ -56,13 +55,13 @@ const Chat = ({
       document.title = `${messages[0].content.substring(0, 30)} - Perplexica`;
     }
 
-    if (messages[messages.length - 1]?.role == 'user') {
-      scroll();
+    if (messages[messages.length - 1]?.role === 'user') {
+      requestAnimationFrame(scroll);
     }
   }, [messages]);
 
   return (
-    <div className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-32 sm:mx-4 md:mx-8">
+    <div className="flex flex-col space-y-4 pt-6 pb-36 lg:pb-24 sm:mx-4 md:mx-8">
       {messages.map((msg, i) => {
         const isLast = i === messages.length - 1;
 
@@ -80,7 +79,7 @@ const Chat = ({
               sendMessage={sendMessage}
             />
             {!isLast && msg.role === 'assistant' && (
-              <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
+              <div className="h-px w-full my-3 bg-gradient-to-r from-transparent via-light-tertiary to-transparent dark:via-dark-tertiary" />
             )}
           </Fragment>
         );
@@ -89,17 +88,19 @@ const Chat = ({
       <div ref={messageEnd} className="h-0" />
       {dividerWidth > 0 && (
         <div
-          className="bottom-24 lg:bottom-10 fixed z-40"
+          className="bottom-20 lg:bottom-8 fixed z-40 w-full max-w-[calc(100%-2rem)] md:max-w-[calc(100%-4rem)]"
           style={{ width: dividerWidth }}
         >
-          <MessageInput
-            loading={loading}
-            sendMessage={sendMessage}
-            fileIds={fileIds}
-            setFileIds={setFileIds}
-            files={files}
-            setFiles={setFiles}
-          />
+          <div className="mx-auto bg-light-primary/90 dark:bg-dark-primary/90 backdrop-blur-sm rounded-xl shadow-lg">
+            <MessageInput
+              loading={loading}
+              sendMessage={sendMessage}
+              fileIds={fileIds}
+              setFileIds={setFileIds}
+              files={files}
+              setFiles={setFiles}
+            />
+          </div>
         </div>
       )}
     </div>
